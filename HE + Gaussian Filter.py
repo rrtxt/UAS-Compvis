@@ -249,63 +249,107 @@ def calculate_psnr(original_image, processed_image):
     return psnr
 
 # %% 
-# Function to process images and calculate average MSE and PSNR, then save to separate files
-def process_images_for_average_evaluation(input_folder_original, input_folder_processed, category_folder, output_file):
-    total_mse = 0.0
-    total_psnr = 0.0
-    image_count = 0
+# Function to process subfolders and calculate average MSE and PSNR per subfolder,
+# Then calculate average per category and overall average
+def process_subfolders_and_calculate_average_per_category(input_folder_original, input_folder_processed, input_folders, output_file):
+    total_mse_by_category = {
+        'PlayingGuitar': 0.0,
+        'YoYo': 0.0
+    }
+    total_psnr_by_category = {
+        'PlayingGuitar': 0.0,
+        'YoYo': 0.0
+    }
+    subfolder_count_by_category = {
+        'PlayingGuitar': 0,
+        'YoYo': 0
+    }
 
-    # Open the output file in write mode (creates a new file for each category)
+    # Open the output file in write mode (creates a new file for overall results)
     with open(output_file, 'w') as f:
-        f.write(f"\n--- Processing category: {category_folder} ---\n")
-        
-        # Iterate through all subfolders in the input folder
-        for subfolder in os.listdir(input_folder_original):
-            subfolder_original_path = os.path.join(input_folder_original, subfolder)
-            subfolder_processed_path = os.path.join(input_folder_processed, subfolder)
+        f.write("--- Overall MSE and PSNR Calculation ---\n")
 
-            if os.path.isdir(subfolder_original_path) and os.path.isdir(subfolder_processed_path):
-                # Process all images in the subfolder
-                for image_filename in os.listdir(subfolder_original_path):
-                    if image_filename.endswith(('.png', '.jpg', '.jpeg')):
-                        original_image_path = os.path.join(subfolder_original_path, image_filename)
-                        processed_image_path = os.path.join(subfolder_processed_path, image_filename)
+        # Iterate through all categories (PlayingGuitar and YoYo)
+        for category_folder in input_folders.values():
+            category_original_path = os.path.join(input_folder_original, category_folder)
+            category_processed_path = os.path.join(input_folder_processed, category_folder)
 
-                        print(f"Processing image {image_filename} in {subfolder}...")
+            # Iterate through all subfolders within each category
+            for subfolder in os.listdir(category_original_path):
+                total_mse = 0.0
+                total_psnr = 0.0
+                image_count = 0
+                
+                subfolder_original_path = os.path.join(category_original_path, subfolder)
+                subfolder_processed_path = os.path.join(category_processed_path, subfolder)
 
-                        # Read both original and processed images
-                        original_image = cv2.imread(original_image_path)
-                        processed_image = cv2.imread(processed_image_path)
+                # Check if both original and processed subfolders exist
+                if os.path.isdir(subfolder_original_path) and os.path.isdir(subfolder_processed_path):
+                    # Process all images in the subfolder
+                    for image_filename in os.listdir(subfolder_original_path):
+                        if image_filename.endswith(('.png', '.jpg', '.jpeg')):
+                            original_image_path = os.path.join(subfolder_original_path, image_filename)
+                            processed_image_path = os.path.join(subfolder_processed_path, image_filename)
 
-                        if original_image is None or processed_image is None:
-                            print(f"Error: Could not read one of the images: {image_filename}")
-                            continue  # Skip if image could not be read
+                            # Read both original and processed images
+                            original_image = cv2.imread(original_image_path)
+                            processed_image = cv2.imread(processed_image_path)
 
-                        # Calculate MSE and PSNR
-                        mse = calculate_mse(original_image, processed_image)
-                        psnr = calculate_psnr(original_image, processed_image)
+                            if original_image is None or processed_image is None:
+                                print(f"Error: Could not read one of the images: {image_filename}")
+                                continue  # Skip if image could not be read
 
-                        total_mse += mse
-                        total_psnr += psnr
-                        image_count += 1
+                            # Calculate MSE and PSNR
+                            mse = calculate_mse(original_image, processed_image)
+                            psnr = calculate_psnr(original_image, processed_image)
 
-                        # Write individual image results to the file
-                        f.write(f"MSE for {image_filename}: {mse}\n")
-                        f.write(f"PSNR for {image_filename}: {psnr} dB\n")
+                            total_mse += mse
+                            total_psnr += psnr
+                            image_count += 1
 
-        # Calculate average MSE and PSNR
-        if image_count > 0:
-            average_mse = total_mse / image_count
-            average_psnr = total_psnr / image_count
-        else:
-            average_mse = 0
-            average_psnr = 0
+                    # Calculate average MSE and PSNR for the current subfolder
+                    if image_count > 0:
+                        average_mse = total_mse / image_count
+                        average_psnr = total_psnr / image_count
+                    else:
+                        average_mse = 0
+                        average_psnr = 0
 
-        # Write average results to the file
-        f.write(f"Average MSE for {category_folder}: {average_mse}\n")
-        f.write(f"Average PSNR for {category_folder}: {average_psnr} dB\n")
+                    # Write average results for the current subfolder to the file
+                    f.write(f"\nSubfolder: {subfolder} (Category: {category_folder})\n")
+                    f.write(f"Average MSE: {average_mse}\n")
+                    f.write(f"Average PSNR: {average_psnr} dB\n")
 
-# %% 
+                    # Accumulate category-level MSE and PSNR for overall calculation
+                    total_mse_by_category[category_folder] += average_mse
+                    total_psnr_by_category[category_folder] += average_psnr
+                    subfolder_count_by_category[category_folder] += 1
+
+        # Calculate average MSE and PSNR for each category
+        f.write("\n--- Average Results by Category ---\n")
+        for category in total_mse_by_category.keys():
+            if subfolder_count_by_category[category] > 0:
+                average_mse_by_category = total_mse_by_category[category] / subfolder_count_by_category[category]
+                average_psnr_by_category = total_psnr_by_category[category] / subfolder_count_by_category[category]
+            else:
+                average_mse_by_category = 0
+                average_psnr_by_category = 0
+
+            f.write(f"{category} - Average MSE: {average_mse_by_category}\n")
+            f.write(f"{category} - Average PSNR: {average_psnr_by_category} dB\n")
+
+        # Calculate overall average MSE and PSNR across all categories
+        overall_mse = (total_mse_by_category['PlayingGuitar'] + total_mse_by_category['YoYo']) / (
+            subfolder_count_by_category['PlayingGuitar'] + subfolder_count_by_category['YoYo'] or 1)
+        overall_psnr = (total_psnr_by_category['PlayingGuitar'] + total_psnr_by_category['YoYo']) / (
+            subfolder_count_by_category['PlayingGuitar'] + subfolder_count_by_category['YoYo'] or 1)
+
+        # Write overall average results to the file
+        f.write("\n--- Overall Results ---\n")
+        f.write(f"Overall Average MSE: {overall_mse}\n")
+        f.write(f"Overall Average PSNR: {overall_psnr} dB\n")
+
+# %%
 # Define input folders for original and processed images
 input_folder_original = 'Output/Grayscale'
 input_folder_processed = 'Output/HE+GaussianFilter/3x3'
@@ -315,16 +359,10 @@ input_folders = {
     'YoYo': 'YoYo'
 }
 
-# %% Process images and calculate average MSE and PSNR, then save to separate files for each category
-for category_folder in input_folders.values():
-    output_file = f'Output/{category_folder}_mse_psnr_results.txt'
-    print(f"Processing category: {category_folder}")
-    process_images_for_average_evaluation(
-        os.path.join(input_folder_original, category_folder),
-        os.path.join(input_folder_processed, category_folder),
-        category_folder,
-        output_file
-    )
-    print(f"Finished processing {category_folder}. Results saved to {output_file}")
+# Process subfolders, calculate average MSE and PSNR per subfolder, and then calculate average per category
+output_file = 'Output/average_by_category_mse_psnr_results.txt'
+process_subfolders_and_calculate_average_per_category(input_folder_original, input_folder_processed, input_folders, output_file)
+
+print(f"Finished processing. Average results saved to {output_file}")
 
 # %%
