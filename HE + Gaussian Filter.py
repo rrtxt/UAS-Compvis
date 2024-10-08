@@ -182,7 +182,7 @@ for input_folder, category_folder in input_folders.items():
 ##PROSES GAUSSIAN FILTERING
 # %% 
 # Function to apply Gaussian filter
-def gaussian_filter_image(input_image_path, output_image_path, kernel_size=(5, 5), sigma=1.0):
+def gaussian_filter_image(input_image_path, output_image_path, kernel_size=(3, 3), sigma=1.0):
     # Read the image in color
     image = cv2.imread(input_image_path)
     if image is None:
@@ -198,7 +198,7 @@ def gaussian_filter_image(input_image_path, output_image_path, kernel_size=(5, 5
 
 # %% 
 # Function to process images in a folder
-def process_images_with_gaussian(input_folder, category_folder, output_folder, kernel_size=(5, 5), sigma=1.0):
+def process_images_with_gaussian(input_folder, category_folder, output_folder, kernel_size=(3, 3), sigma=1.0):
     # Iterate through all subfolders in the input folder
     for subfolder in os.listdir(input_folder):
         subfolder_path = os.path.join(input_folder, subfolder)
@@ -220,7 +220,7 @@ def process_images_with_gaussian(input_folder, category_folder, output_folder, k
 
 # %% 
 # Define input and output folders
-output_folder = 'Output/HistogramEqualized+GaussianFilter'
+output_folder = 'Output/HE+GaussianFilter/3x3'
 input_folders = {
     'Output/Histogram_Equalized/Tanpa_Histogram/PlayingGuitar': 'PlayingGuitar',
     'Output/Histogram_Equalized/Tanpa_Histogram/YoYo': 'YoYo'
@@ -228,7 +228,7 @@ input_folders = {
 
 # Process images with Gaussian filtering
 for input_folder, category_folder in input_folders.items():
-    process_images_with_gaussian(input_folder, category_folder, output_folder, kernel_size=(5, 5), sigma=1.0)
+    process_images_with_gaussian(input_folder, category_folder, output_folder, kernel_size=(3, 3), sigma=1.0)
     print(f"Finished processing {category_folder} with Gaussian filtering")
 
 ##EVALUASI DENGAN MSE DAN PSNR 
@@ -308,7 +308,7 @@ def process_images_for_average_evaluation(input_folder_original, input_folder_pr
 # %% 
 # Define input folders for original and processed images
 input_folder_original = 'Output/Grayscale'
-input_folder_processed = 'Output/HistogramEqualized+GaussianFilter'
+input_folder_processed = 'Output/HE+GaussianFilter/3x3'
 
 input_folders = {
     'PlayingGuitar': 'PlayingGuitar',
